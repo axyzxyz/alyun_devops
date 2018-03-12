@@ -1,0 +1,25 @@
+[[source]]
+
+url = "http://mirrors.aliyun.com/pypi/simple/"
+verify_ssl = true
+name = "pypi"
+
+
+[packages]
+
+"aliyun-python-sdk-core-v3" = "*"
+aliyun-python-sdk-ecs = "*"
+aliyun-python-sdk-rds = "*"
+aliyun-python-sdk-slb = "*"
+maya = "*"
+tqdm = "*"
+requests = "*"
+
+
+[dev-packages]
+
+
+
+[requires]
+
+python_version = "3.6"
