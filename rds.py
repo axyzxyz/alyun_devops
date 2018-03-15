@@ -16,11 +16,6 @@ from aliyunsdkrds.request.v20140815 import ModifySecurityIpsRequest
 import _config as conf
 
 
-
-
-
-
-
 class RdsDone:
 
     def __init__(self, ak, secret, region):

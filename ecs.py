@@ -10,7 +10,10 @@ from aliyunsdkcore import client
 from aliyunsdkecs.request.v20140526 import DescribeInstancesRequest
 from aliyunsdkecs.request.v20140526 import DeleteSnapshotRequest, DeleteImageRequest
 from aliyunsdkecs.request.v20140526 import CreateImageRequest, CreateInstanceRequest
+from aliyunsdkecs.request.v20140526 import ModifyImageAttributeRequest
+from aliyunsdkcore.acs_exception.exceptions import ServerException
 import _config as conf
+
 
 # 以下模块隐性引用，删除后脚本无法使用, 未防止pep8 采用exec导入
 exec('from aliyunsdkecs.request.v20140526 import DescribeInstancesRequest, '
@@ -30,8 +33,9 @@ def time_make(time_str, make=True):
     """
     make_time = time.mktime(time.strptime(time_str, '%Y-%m-%dT%H:%M:%SZ'))
     now_time = time.time()
+
     if make:
-        return '{0:.2f}'.format((now_time-make_time)/3600)
+        return '{0:.2f}'.format((now_time-make_time)/3600 - 8)  # api返回创建时间为0时区
     return time.mktime(time.strptime(time_str, '%Y-%m-%dT%H:%M:%SZ'))
 
 
@@ -78,7 +82,6 @@ class EcsDone(metaclass=EcsMetaClass):
             return [ecs_instance(x['InstanceId'], x['InstanceName'], x['PublicIpAddress']['IpAddress'][0],
                                  x['InnerIpAddress']['IpAddress'][0]) for x in instances]
 
-
     def get_instance_id(self, instance_name: str=''):
         """
         输入ecs实例的别名
@@ -111,7 +114,7 @@ class EcsDone(metaclass=EcsMetaClass):
         """
         request = eval(getattr(self, func, None))
         request_method = '{}_{}{}{}'.format('set', func[0].upper(), func[1:], 'Name')  # 设置对象名字
-        request_id_method = '{}_{}{}{}'.format('set', func[0].upper(), func[1:], 'Name')  # 设置对象id
+        # request_id_method = '{}_{}{}{}'.format('set', func[0].upper(), func[1:], 'Name')  # 设置对象id
         # if 'instance' in func:
         #     request.set_InstanceName(instance_name)
         # else:
@@ -167,21 +170,24 @@ class EcsDone(metaclass=EcsMetaClass):
         rt1 = '{}{}{}'.format(name[0].upper(), name[1:], 's')
         return rt1, rt2, rt3
 
-    def create_image(self, instance_name: str='instance_name'):
+    def create_image(self, instance_name: str='instance_name', suffix='new'):
         request = CreateImageRequest.CreateImageRequest()
         instance_id = self.get_instance_id(instance_name)
         # print(instance_id)
         if not instance_id:
             raise AttributeError('the instance_name is not exist')
         request.set_InstanceId(instance_id)
-        request.seti
-        image_name = '{}_{}'.format(instance_name, 'new')
+        image_name = '{}_{}'.format(instance_name, suffix)
         request.set_ImageName(image_name)
-        response = self.clt.do_action_with_exception(request)
-        return response
+        try:
+            response = self.clt.do_action_with_exception(request)
+            return response
+        except ServerException as e:
+            return '镜像名字:{}，已存在;同一天只需创建一个镜像'.format(image_name)
 
     def create_instance(self, name, index, instance_type='ecs.c5.large'):
         # 2cpu 4 g ecs.c5.large  4c9g ecs.c5.xlarge
+        """未完成接口，通过阿里弹性伸缩api实现自动扩容"""
         request = CreateInstanceRequest.CreateInstanceRequest()
         request.set_InstanceName('{}_{}_{}'.format(name, day(), index))
         image = self.get_image(name='{}_{}'.format(name, day()))['Images']['Image']
@@ -195,27 +201,10 @@ class EcsDone(metaclass=EcsMetaClass):
         request.set_SecurityGroupId('sg-2319o94a4')  # 安全组id
         request.set_ZoneId()
 
-    {'PageNumber': 1, 'TotalCount': 1, 'PageSize': 100, 'RequestId': '6E5C4F1D-7D93-42D2-AE79-5A0AF7251A5D',
-     'Instances': {'Instance': [
-         {'InnerIpAddress': {'IpAddress': ['10.24.243.140']}, 'ImageId': 'm-bp1jbxp2btnb0l5l4848',
-          'InstanceTypeFamily': 'ecs.s3', 'VlanId': '', 'InstanceId': 'i-bp128lyt2y9pwwisfvq6',
-          'EipAddress': {'IpAddress': '', 'AllocationId': '', 'InternetChargeType': ''}, 'InternetMaxBandwidthIn': -1,
-          'ZoneId': 'cn-hangzhou-e', 'InternetChargeType': 'PayByTraffic', 'SpotStrategy': 'NoSpot',
-          'StoppedMode': 'Not-applicable', 'SerialNumber': '9ebf8025-31f5-4f4e-b085-6b079f33762f', 'IoOptimized': True,
-          'Memory': 8192, 'Cpu': 4,
-          'VpcAttributes': {'NatIpAddress': '', 'PrivateIpAddress': {'IpAddress': []}, 'VSwitchId': '', 'VpcId': ''},
-          'InternetMaxBandwidthOut': 100, 'DeviceAvailable': True,
-          'SecurityGroupIds': {'SecurityGroupId': ['sg-2319o94a4']}, 'SaleCycle': '', 'SpotPriceLimit': 0.0,
-          'AutoReleaseTime': '', 'StartTime': '2018-03-02T01:02Z', 'InstanceName': 'management', 'Description': '',
-          'ResourceGroupId': '', 'OSType': 'linux', 'OSName': 'Debian  8.8 64位', 'InstanceNetworkType': 'classic',
-          'PublicIpAddress': {'IpAddress': ['114.55.105.43']}, 'HostName': 'iZbp128lyt2y9pwwisfvq6Z',
-          'InstanceType': 'ecs.s3.large', 'CreationTime': '2017-10-20T01:17Z', 'Status': 'Running', 'ClusterId': '',
-          'Recyclable': False, 'RegionId': 'cn-hangzhou', 'GPUSpec': '', 'OperationLocks': {'LockReason': []},
-          'InstanceChargeType': 'PrePaid', 'GPUAmount': 0, 'ExpiredTime': '2018-11-10T16:00Z'}]}}
-
-    def del_image(self, image_id):
+    def del_image(self, image_id, force=True):
         request = DeleteImageRequest.DeleteImageRequest()
         request.set_ImageId(image_id)
+        request.set_Force(force)
         response = self.clt.do_action_with_exception(request)
         return response
 
@@ -225,14 +214,22 @@ class EcsDone(metaclass=EcsMetaClass):
         response = self.clt.do_action_with_exception(request)
         return response
 
+    def mod_image_name(self, image_id, image_name='old'):
+        """修改image名字后缀"""
+        request = ModifyImageAttributeRequest.ModifyImageAttributeRequest()
+        request.set_ImageId(image_id)
+        request.set_ImageName(image_name)
+        reponse = self.clt.do_action_with_exception(request)
+        return reponse
 
-def image_create(ecs):
+
+def image_create(ecs, suffix='new'):
     """传入ecs实例"""
     # 创建镜像
     instances = [x['InstanceName'] for x in ecs.get_instance()['Instances']['Instance']]
     # print(instances)
     for i in instances:
-        print(ecs.create_image(i))
+        print(ecs.create_image(i, suffix))
 
 
 def snap_del(ecs, hour=23):
@@ -249,31 +246,55 @@ def snap_del(ecs, hour=23):
             print(ecs.del_snapshot(snapshot_id))
 
 
-def image_del(ecs, hours=23):
+def image_del(ecs, hours=23, force=False):
     """传入ecs实例"""
     # 删除镜像 规则:未使用的且时间在23小时之前的镜像
 
     images = ecs.get_image()['Images']['Image']
     # print(len(images))
     for image in images:
-        image_id, create_time, usage = image['ImageId'], image['CreationTime'], image['Usage']
+        image_id, create_time, usage, alias = image['ImageId'], image['CreationTime'], image['Usage'], \
+                                              image['ImageOwnerAlias']
         # print(image_id, create_time, usage)
-        if float(time_make(create_time)) > float(hours) and usage == 'none':
-            print(ecs.del_image(image_id))
+        if float(time_make(create_time)) > float(hours) and alias == 'self':
+            if not force and usage == 'none':
+                continue
+            print(ecs.del_image(image_id, force))
 
+
+def image_rename(ecs, hours=23, suffix='old'):
+    """修改23小时前的镜像名字，添加后缀old"""
+    images = ecs.get_image()['Images']['Image']
+    for image in images:
+        image_id, create_time, name, alias = image['ImageId'], image['CreationTime'], image['ImageName'],\
+                                             image['ImageOwnerAlias']
+        if not name.endswith(suffix):
+            name = name + '_' + suffix
+        if float(time_make(create_time)) > float(hours) and alias == 'self':
+            ecs.mod_image_name(image_id, name)
+
+def green_print(*args):
+    print('\033[1;32m', *args, '\033[0m')
 
 
 if __name__ == '__main__':
     # 实例化
+    green_print('实例化')
     my_ecs = EcsDone(conf.ak, conf.secret, conf.region)
-    # 创建镜像
-    image_create(my_ecs)
-    # # 删除未使用的旧镜像
-    # image_del(my_ecs, 2)
-    # # # 删除未使用的旧快照
-    # snap_del(my_ecs, 2)
+    # # 删除36小时前的旧镜像
+    green_print('删除36小时前的旧镜像')
+    image_del(my_ecs, 36, force=True)
+    # # 删除未使用的旧快照
+    green_print('删除未使用的旧快照')
+    snap_del(my_ecs, 0)
+    # 修改前一天镜像名字，添加后缀old
+    green_print('修改前一天镜像名字，后缀yesterday')
+    image_rename(my_ecs, 23, 'yesterday')
+    # 创建今天的镜像
+    green_print('创建今天的镜像,后缀now')
+    image_create(my_ecs, suffix='now')
     # for i in my_ecs.get_instance_info(''):
     #     print(i.name, i.out_ip)
 
-    # print(my_ecs.get_image(name='exam-linshi_20180311'))
-    print(my_ecs.get_instance('management'))
+    # print(my_ecs.get_image(name='exam-linshi_new'))
+    # print(my_ecs.get_instance('management'))
