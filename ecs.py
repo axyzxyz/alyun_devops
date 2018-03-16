@@ -289,7 +289,7 @@ if __name__ == '__main__':
     snap_del(my_ecs, 0)
     # 修改前一天镜像名字，添加后缀old
     green_print('修改前一天镜像名字，后缀yesterday')
-    image_rename(my_ecs, 23, 'yesterday')
+    image_rename(my_ecs, 16, 'yesterday')
     # 创建今天的镜像
     green_print('创建今天的镜像,后缀now')
     image_create(my_ecs, suffix='now')

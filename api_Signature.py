@@ -70,7 +70,7 @@ def tran_code(word):
 
 def signature(httpmethod, Secret, public, private):
     """
-    签名,注意，时间格式为UTC0时区的，即-8hours，同时签名时，时间需要urlencode 两次 : --> %3A -->%253A
+    签名,注意，时间格式为UTC0时区的，即-8hours，同时签名时，时间需要urlencode 两次,即时间中间的":" --> %3A -->%253A
     :param httpmethod: 请求方法
     :param Secret: 秘钥
     :param public: 公共请求参数集，
