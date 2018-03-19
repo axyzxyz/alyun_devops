@@ -56,5 +56,5 @@ class RdsDone:
 if __name__ == '__main__':
     rds = RdsDone(conf.ak, conf.secret, conf.region)
     res = rds.get_db_instance('report_readonly')
-    print(rds.add_ip('testdb', '111.111.111.111'))
+    print(res)
 
