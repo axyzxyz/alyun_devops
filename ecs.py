@@ -281,18 +281,20 @@ if __name__ == '__main__':
     # 实例化
     green_print('实例化')
     my_ecs = EcsDone(conf.ak, conf.secret, conf.region)
-    # # 删除36小时前的旧镜像
+    # # # 删除36小时前的旧镜像
     green_print('删除36小时前的旧镜像')
     image_del(my_ecs, 36, force=True)
     # # 删除未使用的旧快照
     green_print('删除未使用的旧快照')
     snap_del(my_ecs, 0)
     # 修改前一天镜像名字，添加后缀old
-    green_print('修改前一天镜像名字，后缀yesterday')
-    image_rename(my_ecs, 16, 'yesterday')
+    # green_print('修改前一天镜像名字，后缀old')
+    # image_rename(my_ecs, 16, 'old')
+    # time.sleep(5)
     # 创建今天的镜像
-    green_print('创建今天的镜像,后缀now')
-    image_create(my_ecs, suffix='now')
+    green_print('创建今天的镜像,后缀当天时间')
+    suffix = time.strftime('%Y%m%d')
+    image_create(my_ecs, suffix=suffix)
     # for i in my_ecs.get_instance_info(''):
     #     print(i.name, i.out_ip)
 
